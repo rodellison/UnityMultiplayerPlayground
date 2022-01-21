@@ -39,3 +39,7 @@ sysinfo.txt
 
 Packages/com.kyrylokuzyk.arfoundationremote
 ARFoundationRemoteCompanionApp/
+
+#Jetbrains
+*.idea
+*.idea/
