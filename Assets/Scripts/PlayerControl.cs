@@ -22,7 +22,7 @@ public class PlayerControl : NetworkBehaviour
     [SerializeField] private NetworkVariable<PlayerState> networkPlayerState = new NetworkVariable<PlayerState>();
 
     [SerializeField] private NetworkVariable<Vector3> networkCurrentLocation = new NetworkVariable<Vector3>();
-    
+
     [SerializeField] private NetworkVariable<Vector3> networkCurrentRotation = new NetworkVariable<Vector3>();
 
     private CharacterController characterController;
@@ -47,10 +47,10 @@ public class PlayerControl : NetworkBehaviour
             transform.position = new Vector3(
                 Random.Range(defaultInitialPositionOnPlane.x, defaultInitialPositionOnPlane.y), 0,
                 Random.Range(defaultInitialPositionOnPlane.x, defaultInitialPositionOnPlane.y));
-            
-            //Start a coroutine that updates the current position of this Client's player.
-            StartCoroutine("UpdateCurrentLocation");
-            
+
+            //Immediately update the current position of this Client's (owned) player so that when the 
+            //non-owned instances start up, they do so in the correct location
+            UpdatePlayerCurrentPositionAndRotationServerRpc(transform.position, transform.rotation);
         }
 
         //Launch a coroutine that ensures the initial starting spawn position for non-owned instances
@@ -69,7 +69,7 @@ public class PlayerControl : NetworkBehaviour
         ClientMoveAndRotate();
         ClientVisuals();
     }
-  
+
 
     private void ClientMoveAndRotate()
     {
@@ -82,6 +82,11 @@ public class PlayerControl : NetworkBehaviour
         {
             transform.Rotate(networkRotationDirection.Value, Space.World);
         }
+
+        //If either value has changed, ensure that the current location of the owned instance is updated
+        if (IsOwner)
+            if (networkPositionDirection.Value != Vector3.zero || networkRotationDirection.Value != Vector3.zero)
+                UpdatePlayerCurrentPositionAndRotationServerRpc(transform.position, transform.rotation);
     }
 
     private void ClientVisuals()
@@ -123,7 +128,6 @@ public class PlayerControl : NetworkBehaviour
             oldInputPosition = inputPosition;
             UpdateClientPositionAndRotationServerRpc(inputPosition * walkSpeed, inputRotation * rotationSpeed);
         }
-
     }
 
     private static bool ActiveRunningActionKey()
@@ -154,10 +158,13 @@ public class PlayerControl : NetworkBehaviour
     [ServerRpc]
     public void UpdatePlayerCurrentPositionAndRotationServerRpc(Vector3 currentLocation, Quaternion currentRotation)
     {
+        //Gotcha reminder: When using ServerRpc, the client needs to provide the parms directly as input, i.e.
+        //can't just do:   networkCurrentLocation.Value = transform.position, as that would be using the server's 
+        //instance's information. 
         networkCurrentLocation.Value = currentLocation;
         networkCurrentRotation.Value = currentRotation.eulerAngles;
     }
-    
+
     /// <summary>
     /// This coroutine is started in the Start method, only IF this instance is NOT the owned client, i.e. this instance
     /// is owned by some other player. It is responsible for ensuring it's position is exactly where the real player is
@@ -171,23 +178,5 @@ public class PlayerControl : NetworkBehaviour
         yield return new WaitForSeconds(spawnSyncWait);
         transform.position = networkCurrentLocation.Value;
         transform.rotation = Quaternion.Euler(networkCurrentRotation.Value);
-    }
-    
-    /// <summary>
-    /// This is a looping coroutine, that periodically updates the server with the (owned) client's location.
-    /// This helps in ensuring that when other client's join the game (late), that they will be able to have
-    /// updated info on where this (owned) client is in the game world. The information updated to the server here
-    /// will be used by other clients via the 'SetStartingLocationForNonOwnedPlayers' method.
-    /// </summary>
-    /// <returns></returns>
-    IEnumerator UpdateCurrentLocation()
-    {
-        //At short intervals, server sync this player's position and rotation so that it can be
-        //used when other players connect to the host/server. 
-        while (true)
-        {
-            UpdatePlayerCurrentPositionAndRotationServerRpc(transform.position, transform.rotation);
-            yield return new WaitForSeconds(spawnSyncWait);
-        }
     }
 }

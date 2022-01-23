@@ -68,8 +68,13 @@ public class UIManager : Singleton<UIManager>
             if (RelayManager.Instance.IsRelayEnabled && !string.IsNullOrEmpty(joinCodeInput.text))
                 await RelayManager.Instance.JoinRelay(joinCodeInput.text);
 
-            if(NetworkManager.Singleton.StartClient())
+            if (NetworkManager.Singleton.StartClient())
+            {
                 Logger.Instance.LogInfo("Client started...");
+                //If we're not the server or host, set the Execute Physics button to be inactive as only the 
+                //server/host can control networked physics.
+                executePhysicsButton.gameObject.SetActive(false);
+            }
             else
                 Logger.Instance.LogInfo("Unable to start client...");
         });
