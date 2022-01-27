@@ -6,42 +6,30 @@ using UnityEngine;
 [RequireComponent(typeof(NetworkObject))]
 public class PlayerWithRaycastControl : NetworkBehaviour
 {
-    [SerializeField]
-    private float walkSpeed = 3.5f;
+    [SerializeField] private float walkSpeed = 3.5f;
 
-    [SerializeField]
-    private float runSpeedOffset = 2.0f;
+    [SerializeField] private float runSpeedOffset = 2.0f;
 
-    [SerializeField]
-    private float rotationSpeed = 3.5f;
+    [SerializeField] private float rotationSpeed = 3.5f;
 
-    [SerializeField]
-    private Vector2 defaultInitialPositionOnPlane = new Vector2(-4, 4);
+    [SerializeField] private Vector2 defaultInitialPositionOnPlane = new Vector2(-4, 4);
 
-    [SerializeField]
-    private NetworkVariable<Vector3> networkPositionDirection = new NetworkVariable<Vector3>();
+    [SerializeField] private NetworkVariable<Vector3> networkPositionDirection = new NetworkVariable<Vector3>();
 
-    [SerializeField]
-    private NetworkVariable<Vector3> networkRotationDirection = new NetworkVariable<Vector3>();
+    [SerializeField] private NetworkVariable<Vector3> networkRotationDirection = new NetworkVariable<Vector3>();
 
-    [SerializeField]
-    private NetworkVariable<PlayerState> networkPlayerState = new NetworkVariable<PlayerState>();
+    [SerializeField] private NetworkVariable<PlayerState> networkPlayerState = new NetworkVariable<PlayerState>();
 
 
-    [SerializeField]
-    private NetworkVariable<float> networkPlayerHealth = new NetworkVariable<float>(1000);
+    [SerializeField] private NetworkVariable<float> networkPlayerHealth = new NetworkVariable<float>(1000);
 
-    [SerializeField]
-    private NetworkVariable<float> networkPlayerPunchBlend = new NetworkVariable<float>();
+    [SerializeField] private NetworkVariable<float> networkPlayerPunchBlend = new NetworkVariable<float>();
 
-    [SerializeField]
-    private GameObject leftHand;
+    [SerializeField] private GameObject leftHand;
 
-    [SerializeField]
-    private GameObject rightHand;
+    [SerializeField] private GameObject rightHand;
 
-    [SerializeField]
-    private float minPunchDistance = 1.0f;
+    [SerializeField] private float minPunchDistance = 1.0f;
 
     private CharacterController characterController;
 
@@ -62,8 +50,9 @@ public class PlayerWithRaycastControl : NetworkBehaviour
     {
         if (IsClient && IsOwner)
         {
-            transform.position = new Vector3(Random.Range(defaultInitialPositionOnPlane.x, defaultInitialPositionOnPlane.y), 0,
-                   Random.Range(defaultInitialPositionOnPlane.x, defaultInitialPositionOnPlane.y));
+            transform.position = new Vector3(
+                Random.Range(defaultInitialPositionOnPlane.x, defaultInitialPositionOnPlane.y), 0,
+                Random.Range(defaultInitialPositionOnPlane.x, defaultInitialPositionOnPlane.y));
 
             PlayerCameraFollow.Instance.FollowPlayer(transform.Find("PlayerCameraRoot"));
         }
@@ -98,13 +87,15 @@ public class PlayerWithRaycastControl : NetworkBehaviour
 
         int layerMask = LayerMask.GetMask("Player");
 
-        if (Physics.Raycast(hand.position, hand.transform.TransformDirection(aimDirection), out hit, minPunchDistance, layerMask))
+        if (Physics.Raycast(hand.position, hand.transform.TransformDirection(aimDirection), out hit, minPunchDistance,
+                layerMask))
         {
-            Debug.DrawRay(hand.position, hand.transform.TransformDirection(aimDirection) * minPunchDistance, Color.yellow);
+            Debug.DrawRay(hand.position, hand.transform.TransformDirection(aimDirection) * minPunchDistance,
+                Color.yellow);
 
             var playerHit = hit.transform.GetComponent<NetworkObject>();
             if (playerHit != null)
-            { 
+            {
                 UpdateHealthServerRpc(1, playerHit.OwnerClientId);
             }
         }
@@ -121,6 +112,7 @@ public class PlayerWithRaycastControl : NetworkBehaviour
         {
             characterController.SimpleMove(networkPositionDirection.Value);
         }
+
         if (networkRotationDirection.Value != Vector3.zero)
         {
             transform.Rotate(networkRotationDirection.Value, Space.World);
@@ -135,7 +127,12 @@ public class PlayerWithRaycastControl : NetworkBehaviour
             animator.SetTrigger($"{networkPlayerState.Value}");
             if (networkPlayerState.Value == PlayerState.Punch)
             {
-                animator.SetFloat($"{networkPlayerState.Value}Blend", networkPlayerPunchBlend.Value);
+                if (IsOwner)
+                {
+                    Logger.Instance.LogInfo($"BlendValue: {networkPlayerPunchBlend.Value}");
+                    animator.SetFloat($"{networkPlayerState.Value}Blend", networkPlayerPunchBlend.Value);
+                }
+
             }
         }
     }
@@ -153,7 +150,7 @@ public class PlayerWithRaycastControl : NetworkBehaviour
         // change fighting states
         if (ActivePunchActionKey() && forwardInput == 0)
         {
-            UpdatePlayerStateServerRpc(PlayerState.Punch);
+            UpdatePlayerStateServerRpc(PlayerState.Punch, oldPlayerState);
             return;
         }
 
@@ -213,7 +210,7 @@ public class PlayerWithRaycastControl : NetworkBehaviour
         {
             Send = new ClientRpcSendParams
             {
-                TargetClientIds = new ulong[] { clientId }
+                TargetClientIds = new ulong[] {clientId}
             }
         });
     }
@@ -230,9 +227,16 @@ public class PlayerWithRaycastControl : NetworkBehaviour
     public void UpdatePlayerStateServerRpc(PlayerState state)
     {
         networkPlayerState.Value = state;
-        if (state == PlayerState.Punch)
-        {
+    }
+
+    [ServerRpc]
+    public void UpdatePlayerStateServerRpc(PlayerState state, PlayerState previousState)
+    {
+        networkPlayerState.Value = state;
+        //This slight change ensures the Owner Player, AND the Non-Owned players animations are in sync.
+        //Only set the Punch state starting Blend value, WHEN we're coming into the Punch from some other
+        //animation, and not when we're already punching.
+        if (state == PlayerState.Punch && previousState != PlayerState.Punch)
             networkPlayerPunchBlend.Value = Random.Range(0.0f, 1.0f);
-        }
     }
 }
