@@ -5,6 +5,9 @@ using UnityEngine;
 [RequireComponent(typeof(NetworkObject))]
 public class PlayerControl : NetworkBehaviour
 {
+    [SerializeField] private SkinnedMeshRenderer _skinnedMeshRenderer;
+    private Material skinMeshBodyMat;
+
     [SerializeField] private float spawnSyncWait = 0.25f;
 
     [SerializeField] private float walkSpeed = 3.5f;
@@ -22,8 +25,10 @@ public class PlayerControl : NetworkBehaviour
     [SerializeField] private NetworkVariable<PlayerState> networkPlayerState = new NetworkVariable<PlayerState>();
 
     [SerializeField] private NetworkVariable<Vector3> networkCurrentLocation = new NetworkVariable<Vector3>();
-    
+
     [SerializeField] private NetworkVariable<Vector3> networkCurrentRotation = new NetworkVariable<Vector3>();
+
+    [SerializeField] private NetworkVariable<Color> networkPlayerColor = new NetworkVariable<Color>();
 
     private CharacterController characterController;
 
@@ -38,6 +43,7 @@ public class PlayerControl : NetworkBehaviour
     {
         characterController = GetComponent<CharacterController>();
         animator = GetComponent<Animator>();
+        skinMeshBodyMat = _skinnedMeshRenderer.materials[0];
     }
 
     void Start()
@@ -47,16 +53,22 @@ public class PlayerControl : NetworkBehaviour
             transform.position = new Vector3(
                 Random.Range(defaultInitialPositionOnPlane.x, defaultInitialPositionOnPlane.y), 0,
                 Random.Range(defaultInitialPositionOnPlane.x, defaultInitialPositionOnPlane.y));
-            
+
             //Start a coroutine that updates the current position of this Client's player.
             StartCoroutine("UpdateCurrentLocation");
             
+            //Update the player with a random color, and share it with the server so that the other clients
+            //know this Owner players color.
+            var colorToUse = Random.ColorHSV(0f, 1f, 1f, 1f, 0.5f, 1f);
+            skinMeshBodyMat.SetColor("_Color", colorToUse);
+            UpdatePlayerColorServerRpc(colorToUse);
         }
 
         //Launch a coroutine that ensures the initial starting spawn position for non-owned instances
         //is updated for this client
         if (!IsOwner)
             StartCoroutine(SetStartingLocationForNonOwnedPlayers());
+        
     }
 
     void Update()
@@ -69,7 +81,7 @@ public class PlayerControl : NetworkBehaviour
         ClientMoveAndRotate();
         ClientVisuals();
     }
-  
+
 
     private void ClientMoveAndRotate()
     {
@@ -123,7 +135,6 @@ public class PlayerControl : NetworkBehaviour
             oldInputPosition = inputPosition;
             UpdateClientPositionAndRotationServerRpc(inputPosition * walkSpeed, inputRotation * rotationSpeed);
         }
-
     }
 
     private static bool ActiveRunningActionKey()
@@ -145,6 +156,15 @@ public class PlayerControl : NetworkBehaviour
     }
 
     /// <summary>
+    /// This ServerRPC method is used to update the Color to apply to the Non owned player's Material
+    /// </summary>
+    [ServerRpc]
+    public void UpdatePlayerColorServerRpc(Color colorToUse)
+    {
+        networkPlayerColor.Value = colorToUse;
+    }
+
+    /// <summary>
     /// This ServerRPC method is used by the UpdateCurrentLocation coroutine to help provide this (owned) client's
     /// player current location so other players can have updated/current info for the Non-owned client/players that
     /// show up in their session.
@@ -157,7 +177,7 @@ public class PlayerControl : NetworkBehaviour
         networkCurrentLocation.Value = currentLocation;
         networkCurrentRotation.Value = currentRotation.eulerAngles;
     }
-    
+
     /// <summary>
     /// This coroutine is started in the Start method, only IF this instance is NOT the owned client, i.e. this instance
     /// is owned by some other player. It is responsible for ensuring it's position is exactly where the real player is
@@ -171,8 +191,11 @@ public class PlayerControl : NetworkBehaviour
         yield return new WaitForSeconds(spawnSyncWait);
         transform.position = networkCurrentLocation.Value;
         transform.rotation = Quaternion.Euler(networkCurrentRotation.Value);
+        
+        skinMeshBodyMat.SetColor("_Color", networkPlayerColor.Value);
+
     }
-    
+
     /// <summary>
     /// This is a looping coroutine, that periodically updates the server with the (owned) client's location.
     /// This helps in ensuring that when other client's join the game (late), that they will be able to have

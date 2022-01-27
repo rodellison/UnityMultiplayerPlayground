@@ -824,12 +824,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 82d02a395452c4f44b6f87d460322c56, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _skinnedMeshRenderer: {fileID: 8047377367509417012}
+  spawnSyncWait: 0.25
   walkSpeed: 3.5
   runSpeedOffset: 2
-  rotationSpeed: 0.5
+  rotationSpeed: 1
   defaultInitialPositionOnPlane: {x: -4, y: 4}
   networkPlayerState:
     m_InternalValue: 0
+  networkPlayerColor:
+    m_InternalValue: {r: 0, g: 0, b: 0, a: 0}
 --- !u!1 &2439462815760529262
 GameObject:
   m_ObjectHideFlags: 0

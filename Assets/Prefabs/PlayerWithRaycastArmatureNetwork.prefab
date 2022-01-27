@@ -824,9 +824,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1c8a5ff3f9a4e13418df908f76d74733, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _skinnedMeshRenderer: {fileID: 8047377367509417012}
+  spawnSyncWait: 0.25
   walkSpeed: 3.5
   runSpeedOffset: 2
-  rotationSpeed: 0.5
+  rotationSpeed: 1
   defaultInitialPositionOnPlane: {x: -4, y: 4}
   networkPositionDirection:
     m_InternalValue: {x: 0, y: 0, z: 0}
@@ -838,6 +840,8 @@ MonoBehaviour:
     m_InternalValue: 1000
   networkPlayerPunchBlend:
     m_InternalValue: 0
+  networkPlayerColor:
+    m_InternalValue: {r: 0, g: 0, b: 0, a: 0}
   leftHand: {fileID: 6867047020064102711}
   rightHand: {fileID: 7564247617468009595}
   minPunchDistance: 0.065
