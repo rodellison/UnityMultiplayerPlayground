@@ -1,14 +1,16 @@
 # Unity Multiplayer Playground
 Various demos while teaching Netcode For GameObjects features in [YouTube](https://www.youtube.com/dilmerv)
 
-YouTube tutorials in Chronogical order / features:
-* [How To Make A Game With Unity Multiplayer Netcode | Project Setup](https://www.youtube.com/watch?v=d1FpS5hYlVE)
-* [How To Make A Game With Unity Multiplayer Netcode | Player Controller](https://www.youtube.com/watch?v=rFCFMkzFaog)
-* [How To Make A Game With Unity Multiplayer Netcode | Player Controller Part 2 And Network Animations](https://youtu.be/GOtE96OKyVA)
-* [How To Make A Game With Unity Multiplayer Netcode | Network Physics And Network Object Pooling](https://youtu.be/DfUUyEWUhwQ)
-* [How To Make A Game With Unity Multiplayer Netcode | Relay Service Setup](https://youtu.be/82Lbho7S0OA)
-* [How To Make A Game With Unity Multiplayer Netcode | Client Network Transform & 3rd Person Camera](https://youtu.be/49mnzY-MpLw)
-* [How To Make A Game With Unity Multiplayer Netcode | ClientRpc ClientRpcParams & ServerRpc](https://www.youtube.com/watch?v=ktGJstDvEmU)
-* [How To Make A Game With Unity Multiplayer Netcode | XR Multiplayer Rig](https://youtu.be/pl6Pbb43E-Y) :bulb: Code for this video is currently only available to [YouTube members](https://www.youtube.com/dilmerv) or [Patrons](https://patreon.com/dilmerv) but it will become public in the near future.
+NOTE!!! - This project is forked from DilmerV's fantastic youtube multiplayer series
+on Netcode for Gameobjects.
 
-Take a look at [Unity official docs](https://docs-multiplayer.unity3d.com/docs/learn/dilmer/dilmer-video) as well with the videos above also included.
+The code in this (forked Repo) contains several modifications on top of Dilmer's original code, mostly cosmetic, but some functional.
+
+The primary changes found here:
+
+1. When host creates a new game, or clients connect - they are provided with a random body color (instead of all the clients looking the same)
+2. In the UIManager and PlayersManager scripts - the process of keeping track of connected Player count has been changed so that it follows more of an **Observer** pattern, instead of having the UIManager update the PlayerCount text EVERY frame.
+3. Moved the UnityTransport component to its own prefab instead of having it on the NetworkManager directly - mostly just to mirror how Unity's BossGame demo has it.
+4. There are several functional updates to the UIManager component to provide for more comprehensive 'Disconnect' process. i.e. if the Host disconnects, a ClientRpc is sent via the PlayersManager script to ask all connected clients to disconnect first. 
+5. A new DefaultVCam (Virtual Camera) has been placed in some scenes where the Followcam was used. When a disconnect occurs, the DefaultVCam is given priority so the user isn't left 'spinning' due to a Followcam client that is no longer connected.
+6. The Canvas UI has been modified to include a new Disconnect button, and cleaner UI for Debug area, so elements don't overlap if the screen is resized. Buttons that aren't needed (i.e. Execute Physics) are hidden if that Client isn't the host, etc. (mostly cosmetic)

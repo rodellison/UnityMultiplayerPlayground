@@ -25,7 +25,8 @@ public class RelayManager : Singleton<RelayManager>
     public bool IsRelayEnabled =>
         Transport != null && Transport.Protocol == UnityTransport.ProtocolType.RelayUnityTransport;
 
-    public UnityTransport Transport => NetworkManager.Singleton.gameObject.GetComponent<UnityTransport>();
+    public UnityTransport Transport => NetworkManager.Singleton.gameObject.GetComponentInChildren<UnityTransport>();
+//    public UnityTransport Transport => NetworkManager.Singleton.gameObject.GetComponent<UnityTransport>();
 
     /// <summary>
     /// The purpose of 'Setting up a Relay' is to establish a remote running Game (data relay) on Unity Cloud servers
@@ -38,7 +39,7 @@ public class RelayManager : Singleton<RelayManager>
     /// that can be shared by the host to other clients who want to join this specific game.</returns>
     public async Task<RelayHostData> SetupRelay()
     {
-        //The main gist in having a Host set up a Unity hosted remote (data relay) for a new game instance is:
+        //The steps in having a Host set up a Unity hosted remote (data relay) for a new game instance is:
         //1. Indicate the environment the instance we want the game relay to run in and wait until UnityServices
         //completes that asynchronous initialization.
         //2. Authenticate to Unity Services
@@ -88,7 +89,7 @@ public class RelayManager : Singleton<RelayManager>
 
     public async Task<RelayJoinData> JoinRelay(string joinCode)
     {
-        //The main gist in having a Client join a specific remote Unity data relay instance is:
+        //The steps in having a Client join a specific remote Unity data relay instance is:
         //1. Indicate the environment the instance of the game data relay we want to join is running and wait until
         //UnityServices completes that asynchronous initialization.
         //2. Authenticate to Unity Services

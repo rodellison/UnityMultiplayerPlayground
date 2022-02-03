@@ -9,23 +9,18 @@ public class PlayerControlAuthorative : NetworkBehaviour
 {
     [SerializeField] private SkinnedMeshRenderer _skinnedMeshRenderer;
     private Material skinMeshBodyMat;
-    
+
     [SerializeField] private float spawnSyncWait = 0.25f;
 
-    [SerializeField]
-    private float walkSpeed = 3.5f;
+    [SerializeField] private float walkSpeed = 3.5f;
 
-    [SerializeField]
-    private float runSpeedOffset = 2.0f;
+    [SerializeField] private float runSpeedOffset = 2.0f;
 
-    [SerializeField]
-    private float rotationSpeed = 3.5f;
+    [SerializeField] private float rotationSpeed = 3.5f;
 
-    [SerializeField]
-    private Vector2 defaultInitialPositionOnPlane = new Vector2(-4, 4);
+    [SerializeField] private Vector2 defaultInitialPositionOnPlane = new Vector2(-4, 4);
 
-    [SerializeField]
-    private NetworkVariable<PlayerState> networkPlayerState = new NetworkVariable<PlayerState>();
+    [SerializeField] private NetworkVariable<PlayerState> networkPlayerState = new NetworkVariable<PlayerState>();
 
     [SerializeField] private NetworkVariable<Color> networkPlayerColor = new NetworkVariable<Color>();
 
@@ -47,10 +42,11 @@ public class PlayerControlAuthorative : NetworkBehaviour
     {
         if (IsClient && IsOwner)
         {
-            transform.position = new Vector3(Random.Range(defaultInitialPositionOnPlane.x, defaultInitialPositionOnPlane.y), 0,
-                   Random.Range(defaultInitialPositionOnPlane.x, defaultInitialPositionOnPlane.y));
+            transform.position = new Vector3(
+                Random.Range(defaultInitialPositionOnPlane.x, defaultInitialPositionOnPlane.y), 0,
+                Random.Range(defaultInitialPositionOnPlane.x, defaultInitialPositionOnPlane.y));
             PlayerCameraFollow.Instance.FollowPlayer(transform.Find("PlayerCameraRoot"));
-            
+
             //Update the player with a random color, and share it with the server so that the other clients
             //know this Owner players color.
             var colorToUse = Random.ColorHSV(0f, 1f, 1f, 1f, 0.5f, 1f);
@@ -60,8 +56,6 @@ public class PlayerControlAuthorative : NetworkBehaviour
 
         if (!IsOwner)
             StartCoroutine(SetStartingForNonOwnedPlayers());
-            
-            
     }
 
     void Update()
@@ -111,6 +105,7 @@ public class PlayerControlAuthorative : NetworkBehaviour
         characterController.SimpleMove(inputPosition * walkSpeed);
         transform.Rotate(inputRotation * rotationSpeed, Space.World);
     }
+
     private static bool ActiveRunningActionKey()
     {
         return Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
@@ -121,7 +116,7 @@ public class PlayerControlAuthorative : NetworkBehaviour
     {
         networkPlayerState.Value = state;
     }
-    
+
     /// <summary>
     /// This ServerRPC method is used to update the Color to apply to the Non owned player's Material
     /// </summary>
@@ -130,7 +125,7 @@ public class PlayerControlAuthorative : NetworkBehaviour
     {
         networkPlayerColor.Value = colorToUse;
     }
-    
+
     /// <summary>
     /// This coroutine is started in the Start method, only IF this instance is NOT the owned client, i.e. this instance
     /// is owned by some other player. 
@@ -142,6 +137,5 @@ public class PlayerControlAuthorative : NetworkBehaviour
         //current location, for this just-starting player client.
         yield return new WaitForSeconds(spawnSyncWait);
         skinMeshBodyMat.SetColor("_Color", networkPlayerColor.Value);
-
     }
 }
