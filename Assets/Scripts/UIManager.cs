@@ -44,7 +44,7 @@ public class UIManager : DilmerGames.Core.Singletons.Singleton<UIManager>
         //the value of Player count.
         //Rather than check the value every frame, just pass a method handler as an Action<int> to the 
         //PlayersManager, and have it updated only when someone joins or disconnects..
-        PlayersManager.Instance.AddPlayerCountChangeObserver(UpdatePlayerCount);
+        //  PlayersManager.Instance.AddPlayerCountChangeObserver(UpdatePlayerCount);
 
         //A default Cinemachine VCam can be used so there is a 'starting' view that can be different than 
         //the in-game view. 
@@ -75,7 +75,14 @@ public class UIManager : DilmerGames.Core.Singletons.Singleton<UIManager>
             // relay features - if the Unity transport is found and is relay protocol then we redirect all the 
             // traffic through the relay, else it just uses a LAN type (UNET) communication.
             if (RelayManager.Instance.IsRelayEnabled)
-                await RelayManager.Instance.SetupRelay();
+            {
+                var relayHostData = await RelayManager.Instance.SetupRelay();
+                if (relayHostData.JoinCode == null)
+                {
+                    Logger.Instance.LogInfo("Unable to start host...");
+                    return;
+                }
+            }
 
             if (NetworkManager.Singleton.StartHost())
             {
@@ -95,7 +102,14 @@ public class UIManager : DilmerGames.Core.Singletons.Singleton<UIManager>
         {
             if (RelayManager.Instance.IsRelayEnabled)
                 if (!string.IsNullOrEmpty(joinCodeInput.text))
-                    await RelayManager.Instance.JoinRelay(joinCodeInput.text);
+                {
+                    var relayJoinData = await RelayManager.Instance.JoinRelay(joinCodeInput.text);
+                    if (relayJoinData.JoinCode == null)
+                    {
+                        Logger.Instance.LogInfo("Could not connect to host...");
+                        return;
+                    }
+                }
                 else
                 {
                     Logger.Instance.LogWarning("No Join Code provided");
@@ -199,7 +213,6 @@ public class UIManager : DilmerGames.Core.Singletons.Singleton<UIManager>
         executePhysicsButton.gameObject.SetActive(false);
         disconnectClientButton?.gameObject.SetActive(false);
         playersInGameText.text = $"Players in game: 0";
-
     }
 
     IEnumerator GracefulServerShutdown()
@@ -239,7 +252,7 @@ public class UIManager : DilmerGames.Core.Singletons.Singleton<UIManager>
             };
             PlayersManager.Instance.RequestClientDisconnectClientRpc(clientRpcParams);
         }
- 
+
         yield return null;
     }
 }
