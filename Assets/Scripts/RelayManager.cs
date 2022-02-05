@@ -66,8 +66,6 @@ public class RelayManager : Singleton<RelayManager>
             await AuthenticationService.Instance.SignInAnonymouslyAsync();
         }
 
- 
-
         try
         {
             //3.
@@ -114,8 +112,6 @@ public class RelayManager : Singleton<RelayManager>
         //4. Update the Transport component (in the NetworkManager game object) with all the key allocation data
         //so it knows where to send its data.
 
-        Logger.Instance.LogInfo($"Client Joining Game With Join Code: {joinCode}");
-
         //1.
         InitializationOptions options = new InitializationOptions()
             .SetEnvironmentName(environment);
@@ -126,7 +122,6 @@ public class RelayManager : Singleton<RelayManager>
         {
             await AuthenticationService.Instance.SignInAnonymouslyAsync();
         }
-
 
         try
         {

@@ -79,8 +79,12 @@ public class UIManager : DilmerGames.Core.Singletons.Singleton<UIManager>
                 var relayHostData = await RelayManager.Instance.SetupRelay();
                 if (relayHostData.JoinCode == null)
                 {
-                    Logger.Instance.LogInfo("Unable to start host...");
+                    Logger.Instance.LogWarning("Unable to start host...");
                     return;
+                }
+                else
+                {
+                    joinCodeInput.GetComponent<TMP_InputField>().text = relayHostData.JoinCode;
                 }
             }
 
@@ -106,7 +110,7 @@ public class UIManager : DilmerGames.Core.Singletons.Singleton<UIManager>
                     var relayJoinData = await RelayManager.Instance.JoinRelay(joinCodeInput.text);
                     if (relayJoinData.JoinCode == null)
                     {
-                        Logger.Instance.LogInfo("Could not connect to host...");
+                        Logger.Instance.LogWarning("Could not connect to host...");
                         return;
                     }
                 }
@@ -115,7 +119,6 @@ public class UIManager : DilmerGames.Core.Singletons.Singleton<UIManager>
                     Logger.Instance.LogWarning("No Join Code provided");
                     return;
                 }
-
 
             if (NetworkManager.Singleton.StartClient())
             {
@@ -143,8 +146,6 @@ public class UIManager : DilmerGames.Core.Singletons.Singleton<UIManager>
             startHostButton?.gameObject.SetActive(false);
             startServerButton?.gameObject.SetActive(false);
             startClientButton?.gameObject.SetActive(false);
-            if (RelayManager.Instance.IsRelayEnabled)
-                joinCodeInput?.gameObject.SetActive(false);
             disconnectClientButton?.gameObject.SetActive(true);
         };
 
@@ -153,13 +154,9 @@ public class UIManager : DilmerGames.Core.Singletons.Singleton<UIManager>
         NetworkManager.Singleton.OnClientDisconnectCallback += (id) =>
         {
             if (NetworkManager.Singleton.IsHost || NetworkManager.Singleton.IsServer)
-            {
                 Logger.Instance.LogInfo($"{id} just disconnected...");
-            }
             else
-            {
                 ShutdownClient();
-            }
         };
 
         NetworkManager.Singleton.OnServerStarted += () =>
@@ -170,8 +167,6 @@ public class UIManager : DilmerGames.Core.Singletons.Singleton<UIManager>
             startHostButton?.gameObject.SetActive(false);
             startServerButton?.gameObject.SetActive(false);
             startClientButton?.gameObject.SetActive(false);
-            if (RelayManager.Instance.IsRelayEnabled)
-                joinCodeInput?.gameObject.SetActive(false);
             executePhysicsButton?.gameObject.SetActive(true);
             disconnectClientButton?.gameObject.SetActive(true);
         };
@@ -192,27 +187,25 @@ public class UIManager : DilmerGames.Core.Singletons.Singleton<UIManager>
             if (NetworkManager.Singleton.IsHost || NetworkManager.Singleton.IsServer)
                 StartCoroutine(GracefulServerShutdown());
             else
-            {
                 ShutdownClient();
-            }
         });
     }
 
     public void ShutdownClient()
     {
-        NetworkManager.Singleton.Shutdown();
-        //After clients disconnected, ensure the camera and UI for the last client (host if there was one) is reset
+        //Ensure the camera and UI for the last client (host if there was one) is reset just before actual shutdown
         if (vCamDefault != null)
             vCamDefault.GetComponent<CinemachineVirtualCamera>().Priority = 100;
+
+        joinCodeInput.GetComponent<TMP_InputField>().text = "Enter your join code...";
 
         startHostButton?.gameObject.SetActive(true);
         startServerButton?.gameObject.SetActive(true);
         startClientButton?.gameObject.SetActive(true);
-        if (RelayManager.Instance.IsRelayEnabled)
-            joinCodeInput?.gameObject.SetActive(true);
-        executePhysicsButton.gameObject.SetActive(false);
+        executePhysicsButton?.gameObject.SetActive(false);
         disconnectClientButton?.gameObject.SetActive(false);
         playersInGameText.text = $"Players in game: 0";
+        NetworkManager.Singleton.Shutdown();
     }
 
     IEnumerator GracefulServerShutdown()
@@ -250,6 +243,7 @@ public class UIManager : DilmerGames.Core.Singletons.Singleton<UIManager>
                     TargetClientIds = new ulong[] {targetClient}
                 }
             };
+
             PlayersManager.Instance.RequestClientDisconnectClientRpc(clientRpcParams);
         }
 

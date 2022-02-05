@@ -13,11 +13,11 @@ public class PlayersManager : NetworkSingleton<PlayersManager>
     {
         playersInGame.OnValueChanged += (value, newValue) =>
         {
-            Logger.Instance.LogInfo("PlayerCount changed");
+           // Logger.Instance.LogInfo("PlayerCount changed");
             UIManager.Instance.UpdatePlayerCount(newValue);
         };
     }
-    
+
     void Start()
     {
         NetworkManager.Singleton.OnClientConnectedCallback += (id) =>
