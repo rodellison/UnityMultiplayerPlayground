@@ -236,15 +236,21 @@ public class UIManager : DilmerGames.Core.Singletons.Singleton<UIManager>
         foreach (var targetClient in targetClients)
         {
             yield return new WaitForSeconds(0.5f);
-            ClientRpcParams clientRpcParams = new ClientRpcParams
+            if (!targetClient.Equals(0))
             {
-                Send = new ClientRpcSendParams
+                ClientRpcParams clientRpcParams = new ClientRpcParams
                 {
-                    TargetClientIds = new ulong[] {targetClient}
-                }
-            };
-
-            PlayersManager.Instance.RequestClientDisconnectClientRpc(clientRpcParams);
+                    Send = new ClientRpcSendParams
+                    {
+                        TargetClientIds = new ulong[] {targetClient}
+                    }
+                };
+                PlayersManager.Instance.RequestClientDisconnectClientRpc(clientRpcParams);
+            }
+            else
+            {
+                ShutdownClient();
+            }
         }
 
         yield return null;
